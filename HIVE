@@ -1,0 +1,38 @@
+
+
+hive
+
+drop table if exists traffic;
+
+create external table traffic(
+year int,
+dist float,
+truck float)
+ROW FORMAT DELIMITED FIELDS TERMINATED by ' '
+STORED as textfile LOCATION '/data_prac/filtered_traffic';
+
+select * from traffic;
+
+
+convert_hive.py
+
+#!/usr/bin/env python
+
+import sys
+import string
+
+while True:
+    line=sys.stdin.readline()
+    if not line:
+        break
+    row=string.strip(line,"\n")
+    year, dist, truck = string.split(row,"\t")
+    miles = float(dist)*0.62
+    print "\t".join([year,str(miles),truck])
+
+
+add file hdfs:///data_prac/convert.py;
+select transform(year,dist,truck)
+USING 'python convert_hive.py'
+as (year int, dist float, truck float)
+from traffic;
