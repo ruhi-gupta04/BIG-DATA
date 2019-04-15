@@ -1,0 +1,34 @@
+
+MAKE THE TERMINAL SCROLLING UNLIMITED
+
+hadoop fs -mkdir /data_prac
+hadoop fs -put /home/cloudera/BIG_DATA/traffic1.csv /data_prac
+hadoop fs -ls /data_prac
+
+pig
+rowData = LOAD '/data_prac/traffic1.csv' USING PigStorage(',') as (year:int, cp:int, start:chararray, end:chararray, distance:float, cycle:float, bikes:float, cars:float, buses:float, vans:float, trucks:float);
+dump rowData;
+filterData = FILTER rowData BY year is NOT NULL;
+groupData = GROUP filterData by year;
+cleanData = FOREACH groupData GENERATE group as year, SUM(filterData.distance) as dist, SUM(filterData.trucks) as truck;
+STORE cleanData INTO '/data_prac/filtered_traffic' USING PigStorage(' ');
+quit;
+
+
+hadoop fs -put /home/cloudera/BIG_DATA/conversion.py /data_prac
+hadoop fs -ls /data_prac
+
+
+convert.py
+@outputSchema("a_file : {(year:int, miles:float, trucks:float)}")
+
+def to_miles(km_dist):
+    year, kms, trucks=km_dist.split(' ')
+    miles=float(kms)*0.62
+    return int(year),miles,float(trucks)
+
+
+REGISTER 'hdfs:///data_prac/convert.py' USING jython AS conv_dist; #some lines output containing Register scripting UDF: conv_dist.to_miles
+rowdata = LOAD '/data_prac/filtered_traffic' as (traffic:chararray);
+runPy = FOREACH rowdata GENERATE FLATTEN(conv_dist.to_miles(traffic)); #one line output containing Schema 'a_file : {(year:int, miles:float, trucks:float)}' defined for func to_miles
+STORE runPy INTO '/data_prac/converted_traffic' USING PigStorage(' ');
