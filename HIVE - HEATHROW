@@ -1,0 +1,44 @@
+
+
+heathrow_hive.py
+
+#!/usr/bin/env python
+
+import sys
+import string
+
+while True:
+    line=sys.stdin.readline()
+    if not line:
+        break
+    row=string.strip(line,"\n")
+    year,month,maxt,mint,days,rainfall,sunrise=string.split(row,"\t")
+    rain_inc=float(rainfall)/25.4
+    print "\t".join([year,month,maxt,mint,days,str(rain_inc),sunrise])
+
+
+hadoop fs -put /home/cloudera/BIG_DATA/heathrow_hive.py /data_m2
+
+hive
+drop table if exists weather;
+
+create external table weather(
+year int,
+month int,
+maxt float,
+mint float,
+days float,
+rainfall float,
+sunrise float)
+ROW FORMAT DELIMITED FIELDS TERMINATED by ' '
+STORED as textfile LOCATION 'data_m2/convertedweather';
+
+select * from weather;
+
+add file hdfs:///data_m2/heathrow_hive.py;
+
+select TRANSFORM(year,month,maxt,mint,days,rainfall,sunrise)
+using 'python heathrow_hive.py'
+as (year int, month int, maxt float, mint float, days float, rainfall float, sunrise float)
+from weather;
+
