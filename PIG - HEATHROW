@@ -1,0 +1,35 @@
+
+hadoop fs -mkdir /data_m2
+hadoop fs -put /home/cloudera/Downloads/heathrow.txt /data_m2
+hadoop fs -ls /data_m2
+
+pig
+
+rowdata= LOAD '/data_m2/heathrow.txt' USING PigStorage('\t') as (year:int, month:int, maxt:float, mint:float, days:int, rainfall:float, sunrise:chararray);
+dump rowdata;
+filterdata = FILTER rowdata by year is NOT NULL;
+cleandata = FOREACH filterdata GENERATE year,month,maxt,mint,days,rainfall,REPLACE(sunrise,'#','') as sunrise;
+cleandata1 = FOREACH cleandata GENERATE year,month,maxt,mint,days,rainfall,REPLACE(sunrise,' ','') as sunrise;
+cleandata2 = FOREACH cleandata1 GENERATE year,month,maxt,mint,days,rainfall,REPLACE(sunrise,'Provisional','') as sunrise;
+cleandata3 = FOREACH cleandata2 GENERATE year,month,maxt,mint,days,rainfall,REPLACE(sunrise,'---','') as sunrise;
+STORE cleandata3 INTO '/data_m2/scrubbedweather' USING PigStorage(' ');
+quit;
+
+
+convert_temp.py
+@outputSchema("a_file: {(year:int,month:int,maxt:float,mint:float,days:float,rainfall:float,sunrise:float)}")
+
+def fahrenheit(temp_celcius):
+    year,month,maxt,mint,days,rainfall,sunrise = temp_celcius.split(' ')
+    maxt_f = float(maxt)*float(9.0/5)+32
+    mint_f = float(mint)*float(9.0/5)+32
+    return year,month,maxt_f,mint_f,days,rainfall,sunrise
+
+
+hadoop fs -put /home/cloudera/BIG_DATA/convert_temp.py /data_m2
+
+pig
+REGISTER 'hdfs:///data_m2/convert_temp.py' USING jython as conv
+data = LOAD '/data_m2/scrubbedweather' as (weather:chararray);
+conversion = FOREACH data GENERATE FLATTEN(conv.fahrenheit(weather));
+Store conversion INTO '/data_m2/convertedweather' using PigStorage(' ');
