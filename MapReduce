@@ -1,0 +1,8 @@
+map reduce functions - http://www.informit.com/articles/article.aspx?p=2190194&seqNum=3
+
+cd /usr/lib
+ls
+cd hadoop-mapreduce/
+hadoop jar hadoop-mapreduce-examples-2.6.0-cdh5.13.0.jar wordmean ra09/shak.txt mean
+
+hadoop fs -ls --> directory name mean should exist
