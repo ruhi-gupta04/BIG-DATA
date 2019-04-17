@@ -1,0 +1,34 @@
+
+SERVER
+
+cd Downloads/
+cd big-data-3
+./setup.sh
+cd mongodb
+mongodb/bin/mongod --dbpath db
+
+
+CLIENT
+
+cd Downloads/big-data-3/mongodb
+mongodb/bin/mongo
+
+show dbs
+use sample
+show collection
+
+db.users.count()
+db.users.findOne()
+db.users.distinct("user_name")
+db.users.find({user_name : "pittspat"})
+db.users.find({tweet_mentioned_count: {$gt:4}}).count()
+db.users.find({user_name : "pittspat"}).pretty()
+db.users.find({user_name:"Kuhr91"},{tweet_ID:1})
+db.users.find({user_name:"Kuhr91"},{_id:0, tweet_ID:1})
+db.users.find({tweet_text : /FIFA/}).pretty()
+db.users.find({tweet_text : /FIFA/}).count()
+db.users.find({$and: [{tweet_text: /FIFA/},{tweet_mentioned_count: {$gt:4}}]}).count()
+db.users.find({$where : "this.tweet_mentioned_count > this.tweet_followers_count"}).count()
+db.users.createIndex({"tweet_text": "text"})
+db.users.find({$text: {$search : "FIFA"}}).count()
+db.users.find({$text: {$search : "FIFA -Texas"}}).count()
